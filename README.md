@@ -9,19 +9,19 @@ Scans your server to find common issues like weak SSH settings, missing firewall
 1. Download the script
 
 ```bash
-$ curl -O https://raw.githubusercontent.com/healthy-host/audit-vps-script/main/audit-vps.sh
+$ curl -O https://raw.githubusercontent.com/healthyhost/audit-vps-script/main/audit.sh
 ```
 
 2. Make it executable:
 
 ```bash
-$ chmod +x audit-vps.ch
+$ chmod +x audit.sh
 ```
 
 3. Run the security audit:
 
 ```bash
-$ sudo ./audit-vps.sh
+$ sudo ./audit.sh
 ```
 
 ### Web
