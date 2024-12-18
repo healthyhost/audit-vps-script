@@ -255,7 +255,7 @@ check_ssh() {
     send_status "$category" "running" "Starting SSH security check"
 
     # Check if SSH is enabled
-    if systemctl is-active --quiet sshd; then
+    if systemctl is-active --quiet sshd || systemctl is-active --quiet ssh.service; then
         send_status "$category" "pass" "SSH service is enabled" "service_status"
         ssh_enabled=true
     else
