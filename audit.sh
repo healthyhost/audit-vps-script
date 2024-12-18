@@ -262,7 +262,7 @@ check_ssh() {
         send_status "$category" "pass" "SSH service is disabled" "service_status"
         send_status "$category" "skip" "SSH service disabled - skipping" "key_auth"
         send_status "$category" "skip" "SSH service disabled - skipping" "config_PermitRootLogin"
-        send_status "$category" "skip" "SSH service disabled - skipping" "config_ChallengeResponseAuthentication"
+        send_status "$category" "skip" "SSH service disabled - skipping" "config_KbdInteractiveAuthentication"
         send_status "$category" "skip" "SSH service disabled - skipping" "config_PasswordAuthentication"
         send_status "$category" "skip" "SSH service disabled - skipping" "config_UsePAM"
         send_status "$category" "skip" "SSH service disabled - skipping" "port"
