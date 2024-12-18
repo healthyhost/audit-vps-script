@@ -48,7 +48,7 @@
 
 set -u
 
-VERSION="0.2.0"
+VERSION="0.2.1"
 API_ENDPOINT="https://api.auditvps.com/audit-step"
 AUDIT_ID=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w 10 | head -n 1)
 SESSION="${1:-}" # Get first parameter or empty string if not provided
@@ -255,7 +255,7 @@ check_ssh() {
     send_status "$category" "running" "Starting SSH security check"
 
     # Check if SSH is enabled
-    if systemctl is-active --quiet sshd; then
+    if systemctl is-active --quiet sshd || systemctl is-active --quiet ssh.service; then
         send_status "$category" "pass" "SSH service is enabled" "service_status"
         ssh_enabled=true
     else
@@ -492,7 +492,7 @@ check_fail2ban() {
         # Check SSH jail configuration only if jail.local exists
        if ! $config_file_missing; then
            # Check if SSH jail is enabled
-           ssh_enabled=$(grep -A10 "^\[sshd\]" /etc/fail2ban/jail.local | grep "enabled" | awk '{print $NF}' | tr -d '[:space:]')
+           ssh_enabled=$(grep -A10 "^\[sshd\]" /etc/fail2ban/jail.local | grep -m 1 "enabled" | awk '{print $NF}' | tr -d '[:space:]')
            if [ "$ssh_enabled" != "true" ]; then
                send_status "$category" "fail" "SSH jail is not enabled" "ssh_jail_enabled"
                failed=true
@@ -501,7 +501,7 @@ check_fail2ban() {
            fi
 
            # Check if mode is aggressive
-           ssh_mode=$(grep -A10 "^\[sshd\]" /etc/fail2ban/jail.local | grep "^mode[[:space:]]*=[[:space:]]*aggressive" >/dev/null && echo "aggressive" || echo "")      
+           ssh_mode=$(grep -A10 "^\[sshd\]" /etc/fail2ban/jail.local | grep -m 1 "^mode[[:space:]]*=[[:space:]]*aggressive" >/dev/null && echo "aggressive" || echo "")      
            if [ "$ssh_mode" != "aggressive" ]; then
                send_status "$category" "fail" "SSH jail is not in aggressive mode" "ssh_jail_mode"
                failed=true
