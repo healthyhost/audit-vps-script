@@ -544,11 +544,11 @@ main() {
 
     send_status "audit" "running" "Starting security audit v${VERSION}"
 
+    check_non_root_user
     check_ufw
     check_ssh
-    check_non_root_user
-    check_unattended_upgrades
     check_fail2ban
+    check_unattended_upgrades
 
     send_status "audit" "pass" "Security audit complete"
 }
