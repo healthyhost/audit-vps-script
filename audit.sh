@@ -382,6 +382,48 @@ check_non_root_user() {
     fi
 }
 
+check_access_control() {
+    local category="access_control"
+    local failed=false
+
+    send_status "$category" "running" "Starting access control validation"
+
+    # Define files to check and their expected permissions
+    declare -A critical_files=(
+        ["/etc/passwd"]="644"
+        ["/etc/shadow"]="600"
+    )
+
+    # Check permissions of critical files
+    for file in "${!critical_files[@]}"; do
+        if [ ! -e "$file" ]; then
+            send_status "$category" "fail" "$file does not exist" "$file"
+            failed=true
+            continue
+        fi
+
+        local actual_perms
+        actual_perms=$(stat -c "%a" "$file")
+
+        if [ "$actual_perms" != "${critical_files[$file]}" ]; then
+            send_status "$category" "fail" "$file permissions are $actual_perms (expected ${critical_files[$file]})" "$file"
+            failed=true
+        else
+            send_status "$category" "pass" "$file permissions are correctly set to ${critical_files[$file]}" "$file"
+        fi
+    done
+
+    # Final status
+    if $failed; then
+        send_status "$category" "fail" "Access control validation failed for some files"
+        return 1
+    else
+        send_status "$category" "pass" "Access control validation passed"
+        return 0
+    fi
+}
+
+
 check_unattended_upgrades() {
    local category="unattended_upgrades"
    local final_status="pass"
