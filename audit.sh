@@ -590,6 +590,7 @@ main() {
     check_ufw
     check_ssh
     check_fail2ban
+    check_access_control
     check_unattended_upgrades
 
     send_status "audit" "pass" "Security audit complete"
