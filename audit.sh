@@ -28,11 +28,12 @@
 #
 # This script performs security checks on an Ubuntu/Debian VPS, ensuring it follows
 # good security practices. It checks for:
+#   * Non-root user setup
 #   * UFW firewall configuration
 #   * SSH hardening
-#   * Non-root user setup
-#   * Automatic updates
 #   * Fail2ban configuration
+#   * Access control and permissions
+#   * Automatic updates
 #
 # Usage:    
 #   Local reporting only:
@@ -48,7 +49,7 @@
 
 set -u
 
-VERSION="0.2.1"
+VERSION="0.3.0"
 API_ENDPOINT="https://api.auditvps.com/audit-step"
 AUDIT_ID=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w 10 | head -n 1)
 SESSION="${1:-}" # Get first parameter or empty string if not provided
@@ -382,6 +383,47 @@ check_non_root_user() {
     fi
 }
 
+check_access_control() {
+    local category="access_control"
+    local failed=false
+
+    send_status "$category" "running" "Starting access control checks"
+
+    # Define files to check and their expected permissions
+    declare -A critical_files=(
+        ["/etc/passwd"]="644"
+        ["/etc/shadow"]="600"
+    )
+
+    # Check permissions of critical files
+    for file in "${!critical_files[@]}"; do
+        if [ ! -e "$file" ]; then
+            send_status "$category" "fail" "$file does not exist" "$file"
+            failed=true
+            continue
+        fi
+
+        local actual_perms
+        actual_perms=$(stat -c "%a" "$file")
+
+        if [ "$actual_perms" != "${critical_files[$file]}" ]; then
+            send_status "$category" "fail" "$file permissions are incorrectly set to $actual_perms (expected ${critical_files[$file]})" "$file"
+            failed=true
+        else
+            send_status "$category" "pass" "$file permissions are correctly set to ${critical_files[$file]}" "$file"
+        fi
+    done
+
+    # Final status
+    if $failed; then
+        send_status "$category" "fail" "Some access control checks failed"
+        return 1
+    else
+        send_status "$category" "pass" "All access control checks passed"
+        return 0
+    fi
+}
+
 check_unattended_upgrades() {
    local category="unattended_upgrades"
    local final_status="pass"
@@ -548,6 +590,7 @@ main() {
     check_ufw
     check_ssh
     check_fail2ban
+    check_access_control
     check_unattended_upgrades
 
     send_status "audit" "pass" "Security audit complete"
