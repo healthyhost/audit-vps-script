@@ -386,7 +386,7 @@ check_access_control() {
     local category="access_control"
     local failed=false
 
-    send_status "$category" "running" "Starting access control validation"
+    send_status "$category" "running" "Starting access control checks"
 
     # Define files to check and their expected permissions
     declare -A critical_files=(
@@ -406,7 +406,7 @@ check_access_control() {
         actual_perms=$(stat -c "%a" "$file")
 
         if [ "$actual_perms" != "${critical_files[$file]}" ]; then
-            send_status "$category" "fail" "$file permissions are $actual_perms (expected ${critical_files[$file]})" "$file"
+            send_status "$category" "fail" "$file permissions are incorrectly set to $actual_perms (expected ${critical_files[$file]})" "$file"
             failed=true
         else
             send_status "$category" "pass" "$file permissions are correctly set to ${critical_files[$file]}" "$file"
@@ -415,14 +415,13 @@ check_access_control() {
 
     # Final status
     if $failed; then
-        send_status "$category" "fail" "Access control validation failed for some files"
+        send_status "$category" "fail" "Some access control checks failed"
         return 1
     else
-        send_status "$category" "pass" "Access control validation passed"
+        send_status "$category" "pass" "All access control checks passed"
         return 0
     fi
 }
-
 
 check_unattended_upgrades() {
    local category="unattended_upgrades"
