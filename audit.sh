@@ -28,11 +28,12 @@
 #
 # This script performs security checks on an Ubuntu/Debian VPS, ensuring it follows
 # good security practices. It checks for:
+#   * Non-root user setup
 #   * UFW firewall configuration
 #   * SSH hardening
-#   * Non-root user setup
-#   * Automatic updates
 #   * Fail2ban configuration
+#   * Access control and permissions
+#   * Automatic updates
 #
 # Usage:    
 #   Local reporting only:
@@ -48,7 +49,7 @@
 
 set -u
 
-VERSION="0.2.1"
+VERSION="0.3.0"
 API_ENDPOINT="https://api.auditvps.com/audit-step"
 AUDIT_ID=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w 10 | head -n 1)
 SESSION="${1:-}" # Get first parameter or empty string if not provided
