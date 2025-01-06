@@ -49,7 +49,7 @@
 
 set -u
 
-VERSION="0.3.0"
+VERSION="0.3.1"
 API_ENDPOINT="https://api.auditvps.com/audit-step"
 AUDIT_ID=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w 10 | head -n 1)
 SESSION="${1:-}" # Get first parameter or empty string if not provided
@@ -389,16 +389,19 @@ check_access_control() {
 
     send_status "$category" "running" "Starting access control checks"
 
-    # Define files to check and their expected permissions
     declare -A critical_files=(
         ["/etc/passwd"]="644"
         ["/etc/shadow"]="600"
     )
 
-    # Check permissions of critical files
+    declare -A check_names=(
+        ["/etc/passwd"]="passwd_file"
+        ["/etc/shadow"]="shadow_file"
+    )
+
     for file in "${!critical_files[@]}"; do
         if [ ! -e "$file" ]; then
-            send_status "$category" "fail" "$file does not exist" "$file"
+            send_status "$category" "fail" "$file does not exist" "${check_names[$file]}"
             failed=true
             continue
         fi
@@ -407,10 +410,10 @@ check_access_control() {
         actual_perms=$(stat -c "%a" "$file")
 
         if [ "$actual_perms" != "${critical_files[$file]}" ]; then
-            send_status "$category" "fail" "$file permissions are incorrectly set to $actual_perms (expected ${critical_files[$file]})" "$file"
+            send_status "$category" "fail" "$file permissions are incorrectly set to $actual_perms (expected ${critical_files[$file]})" "${check_names[$file]}"
             failed=true
         else
-            send_status "$category" "pass" "$file permissions are correctly set to ${critical_files[$file]}" "$file"
+            send_status "$category" "pass" "$file permissions are correctly set to ${critical_files[$file]}" "${check_names[$file]}"
         fi
     done
 
