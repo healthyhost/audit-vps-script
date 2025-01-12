@@ -33,6 +33,7 @@
 #   * SSH hardening
 #   * Fail2ban configuration
 #   * Access control and permissions
+#   * Port security
 #   * Automatic updates
 #
 # Usage:    
@@ -49,7 +50,7 @@
 
 set -u
 
-VERSION="0.3.2"
+VERSION="0.4.0"
 API_ENDPOINT="https://api.auditvps.com/audit-step"
 AUDIT_ID=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w 10 | head -n 1)
 SESSION="${1:-}" # Get first parameter or empty string if not provided
@@ -561,9 +562,67 @@ check_fail2ban() {
     fi
 }
 
+check_port_security() {
+    local category="port_security"
+    local description="Checking open ports"
+    send_status "$category" "running" "$description"
+
+    local cmd
+    local column
+    if command -v ss >/dev/null 2>&1; then
+        cmd="ss -tuln"
+        column=5
+    elif command -v netstat >/dev/null 2>&1; then
+        cmd="netstat -tuln"
+        column=4
+    else
+        send_status "$category" "error" "Neither ss nor netstat command found"
+        return 1
+    fi
+
+    # Get list of listening ports
+    local ports
+    ports=$($cmd | grep 'LISTEN' | awk "{print \$$column}" | awk -F: '{print $NF}' | sort -u)
+
+    declare -A insecure_ports=(
+        [21]="FTP - Unencrypted file transfer"
+        [23]="Telnet - Unencrypted remote access"
+        [25]="SMTP - Unencrypted email transfer"
+        [69]="TFTP - Trivial FTP, unencrypted"
+        [111]="RPC - Remote procedure call"
+        [135]="RPC - Windows RPC"
+        [445]="SMB - File sharing"
+        [3389]="RDP - Remote Desktop"
+    )
+    local -a ordered_ports=(21 23 25 69 111 135 445 3389)
+    
+    local failed=0
+
+    for port in "${ordered_ports[@]}"; do
+        local subcategory="port_security_${port}"
+        local port_description="Checking port ${port} (${insecure_ports[$port]})"
+                
+        if echo "$ports" | grep -q "^${port}$"; then
+            failed=1
+            send_status "$category" "fail" "Port ${port} (${insecure_ports[$port]}) is open" "$subcategory"
+        else
+            send_status "$category" "pass" "Port ${port} is not open" "$subcategory"
+        fi
+    done
+
+    if [ $failed -eq 1 ]; then
+        send_status "$category" "fail" "Some port security checks failed"
+        return 1
+    else
+        send_status "$category" "pass" "All port security checks passed"
+        return 0
+    fi
+}
+
 main() {
     check_os
     check_dependencies
+
   
     if [ -n "${SESSION:-}" ]; then
         echo -e "Session ID: ${SESSION:-}"
@@ -574,14 +633,26 @@ main() {
 
     send_status "audit" "running" "Starting security audit v${VERSION}"
 
-    check_non_root_user
-    check_ufw
-    check_ssh
-    check_fail2ban
-    check_access_control
-    check_unattended_upgrades
+    local failed=0
+    
+    check_non_root_user || failed=1
+    check_ufw || failed=1
+    check_ssh || failed=1
+    check_fail2ban || failed=1
+    check_access_control || failed=1
+    check_port_security || failed=1
+    check_unattended_upgrades || failed=1
+
 
     send_status "audit" "pass" "Security audit complete"
+
+    if [ $failed -eq 1 ]; then
+        echo -e "\n${RED}Audit completed with failures${NC}"
+        exit 1
+    else
+        echo -e "\n${GREEN}All checks passed!${NC}"
+        exit 0
+    fi
 }
 
 main "$@"
