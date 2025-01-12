@@ -489,7 +489,7 @@ check_port_security() {
         cmd="netstat -tuln"
         column=4
     else
-        send_status "$category" "error" "Neither ss nor netstat command found"
+        send_status "$category" "error" "Neither 'ss' nor 'netstat' command found"
         return 1
     fi
 
@@ -623,7 +623,6 @@ main() {
     check_os
     check_dependencies
 
-  
     if [ -n "${SESSION:-}" ]; then
         echo -e "Session ID: ${SESSION:-}"
     else
