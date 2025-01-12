@@ -475,6 +475,63 @@ check_unattended_upgrades() {
    fi
 }
 
+check_port_security() {
+    local category="port_security"
+    local description="Checking open ports"
+    send_status "$category" "running" "$description"
+
+    local cmd
+    local column
+    if command -v ss >/dev/null 2>&1; then
+        cmd="ss -tuln"
+        column=5
+    elif command -v netstat >/dev/null 2>&1; then
+        cmd="netstat -tuln"
+        column=4
+    else
+        send_status "$category" "error" "Neither ss nor netstat command found"
+        return 1
+    fi
+
+    # Get list of listening ports
+    local ports
+    ports=$($cmd | grep 'LISTEN' | awk "{print \$$column}" | awk -F: '{print $NF}' | sort -u)
+
+    declare -A insecure_ports=(
+        [21]="FTP - Unencrypted file transfer"
+        [23]="Telnet - Unencrypted remote access"
+        [25]="SMTP - Unencrypted email transfer"
+        [69]="TFTP - Trivial FTP, unencrypted"
+        [111]="RPC - Remote procedure call"
+        [135]="RPC - Windows RPC"
+        [445]="SMB - File sharing"
+        [3389]="RDP - Remote Desktop"
+    )
+    local -a ordered_ports=(21 23 25 69 111 135 445 3389)
+    
+    local failed=0
+
+    for port in "${ordered_ports[@]}"; do
+        local subcategory="port_${port}"
+        local port_description="Checking port ${port} (${insecure_ports[$port]})"
+                
+        if echo "$ports" | grep -q "^${port}$"; then
+            failed=1
+            send_status "$category" "fail" "Port ${port} (${insecure_ports[$port]}) is open" "$subcategory"
+        else
+            send_status "$category" "pass" "Port ${port} is not open" "$subcategory"
+        fi
+    done
+
+    if [ $failed -eq 1 ]; then
+        send_status "$category" "fail" "Some port security checks failed"
+        return 1
+    else
+        send_status "$category" "pass" "All port security checks passed"
+        return 0
+    fi
+}
+
 check_fail2ban() {
     local category="fail2ban"
     local failed=false
@@ -558,63 +615,6 @@ check_fail2ban() {
         return 1
     else
         send_status "$category" "pass" "All fail2ban checks passed"
-        return 0
-    fi
-}
-
-check_port_security() {
-    local category="port_security"
-    local description="Checking open ports"
-    send_status "$category" "running" "$description"
-
-    local cmd
-    local column
-    if command -v ss >/dev/null 2>&1; then
-        cmd="ss -tuln"
-        column=5
-    elif command -v netstat >/dev/null 2>&1; then
-        cmd="netstat -tuln"
-        column=4
-    else
-        send_status "$category" "error" "Neither ss nor netstat command found"
-        return 1
-    fi
-
-    # Get list of listening ports
-    local ports
-    ports=$($cmd | grep 'LISTEN' | awk "{print \$$column}" | awk -F: '{print $NF}' | sort -u)
-
-    declare -A insecure_ports=(
-        [21]="FTP - Unencrypted file transfer"
-        [23]="Telnet - Unencrypted remote access"
-        [25]="SMTP - Unencrypted email transfer"
-        [69]="TFTP - Trivial FTP, unencrypted"
-        [111]="RPC - Remote procedure call"
-        [135]="RPC - Windows RPC"
-        [445]="SMB - File sharing"
-        [3389]="RDP - Remote Desktop"
-    )
-    local -a ordered_ports=(21 23 25 69 111 135 445 3389)
-    
-    local failed=0
-
-    for port in "${ordered_ports[@]}"; do
-        local subcategory="port_security_${port}"
-        local port_description="Checking port ${port} (${insecure_ports[$port]})"
-                
-        if echo "$ports" | grep -q "^${port}$"; then
-            failed=1
-            send_status "$category" "fail" "Port ${port} (${insecure_ports[$port]}) is open" "$subcategory"
-        else
-            send_status "$category" "pass" "Port ${port} is not open" "$subcategory"
-        fi
-    done
-
-    if [ $failed -eq 1 ]; then
-        send_status "$category" "fail" "Some port security checks failed"
-        return 1
-    else
-        send_status "$category" "pass" "All port security checks passed"
         return 0
     fi
 }
