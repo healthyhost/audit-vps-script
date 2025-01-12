@@ -39,29 +39,31 @@ Visit [https://auditpvps.com](https://auditvps.com) to run checks through our we
 The scripts perform the following checks:
 
 - Root
-  - Check if non-root sudo user exists
+  - Check that non-root sudo user exists
 - Firewall (UFW)
-  - Check if UFW is installed
-  - Check if UFW is enabled
-  - Check if incoming traffic is blocked
+  - Check that UFW is installed
+  - Check that UFW is enabled
+  - Check that incoming traffic is blocked
 - SSH
-  - Check if SSH is enabled
-  - Check if key-based authentication is enabled
-  - Check if root login is disabled
-  - Check if password authentication is disabled
-  - Check if SSH is listening on port 22
+  - Check that SSH is enabled
+  - Check that key-based authentication is enabled
+  - Check that root login is disabled
+  - Check that password authentication is disabled
+  - Check that SSH is listening on port 22
 - Fail2Ban
-  - Check if Fail2ban is installed
-  - Check if Fail2ban is enabled
-  - Check if Fail2ban is configured correctly
-  - Check if Fail2ban SSH is enabled
-  - Check if Fail2ban SSH is in aggressive mode
+  - Check that Fail2ban is installed
+  - Check that Fail2ban is enabled
+  - Check that Fail2ban is configured correctly
+  - Check that Fail2ban SSH is enabled
+  - Check that Fail2ban SSH is in aggressive mode
 - Access control
-  - Check if `/etc/passwd` is readable by everyone
-  - Check if `/etc/shadow` is readable by root only
+  - Check that `/etc/passwd` is readable by everyone
+  - Check that `/etc/shadow` is readable by root only
 - System updates
-  - Check if automatic system updates are enabled
-  - Check if automatic system upgrades are enabled
+  - Check that automatic system updates are enabled
+  - Check that automatic system upgrades are enabled
+- Port security
+  - Checks that insecure ports are not open
 
 ## Contributing
 
