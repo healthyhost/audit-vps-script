@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # MIT License
 
@@ -49,7 +49,7 @@
 
 set -u
 
-VERSION="0.3.1"
+VERSION="0.3.2"
 API_ENDPOINT="https://api.auditvps.com/audit-step"
 AUDIT_ID=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w 10 | head -n 1)
 SESSION="${1:-}" # Get first parameter or empty string if not provided
@@ -212,7 +212,7 @@ check_ufw() {
     
     # Check if UFW is active
     if ! $failed; then
-        if ! sudo ufw status | grep -q "Status: active"; then
+        if ! sudo ufw status | grep -qw "active"; then
             send_status "$category" "fail" "UFW is not active" "active_status"
             failed=true
         else
@@ -307,21 +307,6 @@ check_ssh() {
                 send_status "$category" "pass" "${key} is correctly set to '$expected'" "config_${key}"
             fi
         done
-        
-        # Check SSH port
-        # Disabled for now as listening on port 22 is not a security issue - might turn this into a warning at some point
-        # local ssh_port
-        # ssh_port=$(sudo sshd -T | grep -i "^port" | awk '{print $2}')
-        
-        # if [ -z "$ssh_port" ]; then
-        #     send_status "$category" "fail" "SSH port is not explicitly set (defaults to 22)" "port"
-        #     final_status="fail"
-        # elif [ "$ssh_port" = "22" ]; then
-        #     send_status "$category" "fail" "SSH is using the standard port (22)" "port"
-        #     final_status="fail"
-        # else
-        #     send_status "$category" "pass" "SSH is using non-standard port ${ssh_port}" "port"
-        # fi
     fi
     
     # Final status
